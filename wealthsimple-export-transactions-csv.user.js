@@ -48,11 +48,12 @@ const texts = {
     notes: "Notes",
     ONE_TIME: "One time",
     payee: "Payee",
-    sellOrderNotesPrefix: "Sold",
-    stockLendingInterestNotes: "Stock lending earnings",
     to: "to",
     transferDestination: "Transfered",
     transferSource: "Transfered",
+    referral: "Referral reward",
+    sellOrderNotesPrefix: "Sold",
+    stockLendingInterestNotes: "Stock lending earnings",
     wealthSimpleCashTransferReceivedNotesPrefix:
       "Received WealthSimple Cash transfer",
     wealthSimpleCashTransferSentNotesPrefix:
@@ -94,11 +95,12 @@ const texts = {
     notes: "Notes",
     ONE_TIME: "Unique",
     payee: "Bénéficiaire",
-    sellOrderNotesPrefix: "Vendu:",
-    stockLendingInterestNotes: "Gains des prêts d'actions",
     to: "à",
     transferDestination: "Transferé",
     transferSource: "Transferé",
+    referral: "Récompense de recommandation",
+    sellOrderNotesPrefix: "Vendu:",
+    stockLendingInterestNotes: "Gains des prêts d'actions",
     wealthSimpleCashTransferReceivedNotesPrefix:
       "Transfert WealthSimple Cash reçu",
     wealthSimpleCashTransferSentNotesPrefix:
@@ -945,6 +947,10 @@ async function accountTransactionsToCsvBlob(transactions) {
       case "PROMOTION/INCENTIVE_BONUS":
         payee = texts[language].wealthSimple;
         notes = `${texts[language].incentiveBonus}`;
+        break;
+      case "REFERRAL":
+        payee = texts[language].wealthSimple;
+        notes = `${texts[language].referral}`;
         break;
       case "INSTITUTIONAL_TRANSFER_INTENT/TRANSFER_IN":
         info = await institutionalTransfer(transaction.externalCanonicalId);
