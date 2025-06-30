@@ -5,7 +5,7 @@
 // @namespace   Violentmonkey Scripts
 // @match       https://my.wealthsimple.com/*
 // @grant       GM.xmlHttpRequest
-// @version     1.1.8
+// @version     1.1.9
 // @license     MIT
 // @author      eaglesemanation
 // @description Adds export buttons to Activity feed and to Account specific activity. They will export transactions within certain timeframe into CSV, options are "This Month", "Last 3 Month", "All". This should provide better transaction description than what is provided by preexisting CSV export feature.
@@ -156,18 +156,15 @@ function getPageInfo() {
 
   let pathParts = window.location.pathname.split("/");
   if (pathParts.length === 4 && pathParts[2] === "account-details") {
-    // All classes within HTML have been obfuscated/minified, using icons as a starting point, in hope that they don't change that much.
-    const threeDotsSvgPath =
-      "M12 13a1 1 0 1 0 0-2 1 1 0 0 0 0 2ZM19 13a1 1 0 1 0 0-2 1 1 0 0 0 0 2ZM5 13a1 1 0 1 0 0-2 1 1 0 0 0 0 2Z";
-    const threeDotsButtonContainerQuery = `div:has(> div > button svg > path[d="${threeDotsSvgPath}"])`;
+    const actionsMenuSelector = `div:has(>div>div>button[data-qa="account-actions-menu"])`;
 
     info.pageType = pathParts[2];
-    let anchor = document.querySelectorAll(threeDotsButtonContainerQuery);
+    let anchor = document.querySelectorAll(actionsMenuSelector);
     if (anchor.length !== 1) {
       return emptyInfo;
     }
     info.anchor = anchor[0];
-    info.readyPredicate = () => info.anchor.parentNode.parentNode.children.length >= 2;
+    info.readyPredicate = () => info.anchor.parentNode.childNodes.length === 2;
   } else  if (pathParts.length === 3 && (pathParts[2] === "activity")) {
     // All classes within HTML have been obfuscated/minified, using icons as a starting point, in hope that the rest of the layout doesn't change much.
     const buttonsContainerQuery = "main > div:has(h1)"
@@ -331,7 +328,7 @@ function addButtons(pageInfo) {
   }
 
   if (pageInfo.anchor.querySelector("h1") !== null) {
-  pageInfo.anchor.querySelector("h1").parentNode.appendChild(buttonRow)
+    pageInfo.anchor.querySelector("h1").parentNode.appendChild(buttonRow)
   } else {
     let anchorParent = pageInfo.anchor.parentNode;
     anchorParent.insertBefore(buttonRow, pageInfo.anchor);
