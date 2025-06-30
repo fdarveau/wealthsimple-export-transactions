@@ -5,7 +5,7 @@
 // @namespace   Violentmonkey Scripts
 // @match       https://my.wealthsimple.com/*
 // @grant       GM.xmlHttpRequest
-// @version     1.1.9
+// @version     1.1.10
 // @license     MIT
 // @author      eaglesemanation
 // @description Adds export buttons to Activity feed and to Account specific activity. They will export transactions within certain timeframe into CSV, options are "This Month", "Last 3 Month", "All". This should provide better transaction description than what is provided by preexisting CSV export feature.
@@ -27,6 +27,7 @@ const texts = {
     buttonLast3Months: "Last 3 months",
     buttonAll: "All",
     buyOrderNotesPrefix: "Bought",
+    cashback: "Cashback",
     category: "Category",
     cryptoReceived: "Crypto received:",
     cryptoStaked: "Crypto staked:",
@@ -73,6 +74,7 @@ const texts = {
     buttonLast3Months: "Les 3 derniers mois",
     buttonAll: "Tout",
     buyOrderNotesPrefix: "Acheté:",
+    cashback: "Remise en argent",
     category: "Categorie",
     cryptoReceived: "Crypto reçue:",
     cryptoStaked: "Crypto stakée:",
@@ -951,6 +953,10 @@ async function accountTransactionsToCsvBlob(transactions) {
       case "REFUND/TRANSFER_FEE_REFUND":
         payee = texts[language].wealthSimple;
         notes = `${texts[language].institutionalTransferFeeRefund}`;
+        break;
+      case "REIMBURSEMENT/CASHBACK":
+        payee = texts[language].wealthSimple;
+        notes = `${texts[language].cashback}`;
         break;
       default:
         console.error(
