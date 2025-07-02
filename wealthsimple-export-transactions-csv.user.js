@@ -5,7 +5,7 @@
 // @namespace   Violentmonkey Scripts
 // @match       https://my.wealthsimple.com/*
 // @grant       GM.xmlHttpRequest
-// @version     1.1.8
+// @version     1.1.11
 // @license     MIT
 // @author      eaglesemanation
 // @description Adds export buttons to Activity feed and to Account specific activity. They will export transactions within certain timeframe into CSV, options are "This Month", "Last 3 Month", "All". This should provide better transaction description than what is provided by preexisting CSV export feature.
@@ -51,7 +51,7 @@ const texts = {
     to: "to",
     transferDestination: "Transfered",
     transferSource: "Transfered",
-    referral: "Referral reward",
+    referral: "Referral bonus",
     sellOrderNotesPrefix: "Sold",
     stockLendingInterestNotes: "Stock lending earnings",
     wealthSimpleCashTransferReceivedNotesPrefix:
