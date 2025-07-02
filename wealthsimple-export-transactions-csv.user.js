@@ -5,7 +5,7 @@
 // @namespace   Violentmonkey Scripts
 // @match       https://my.wealthsimple.com/*
 // @grant       GM.xmlHttpRequest
-// @version     1.1.10
+// @version     1.1.11
 // @license     MIT
 // @author      eaglesemanation
 // @description Adds export buttons to Activity feed and to Account specific activity. They will export transactions within certain timeframe into CSV, options are "This Month", "Last 3 Month", "All". This should provide better transaction description than what is provided by preexisting CSV export feature.
@@ -49,11 +49,12 @@ const texts = {
     notes: "Notes",
     ONE_TIME: "One time",
     payee: "Payee",
-    sellOrderNotesPrefix: "Sold",
-    stockLendingInterestNotes: "Stock lending earnings",
     to: "to",
     transferDestination: "Transfered",
     transferSource: "Transfered",
+    referral: "Referral bonus",
+    sellOrderNotesPrefix: "Sold",
+    stockLendingInterestNotes: "Stock lending earnings",
     wealthSimpleCashTransferReceivedNotesPrefix:
       "Received WealthSimple Cash transfer",
     wealthSimpleCashTransferSentNotesPrefix:
@@ -96,11 +97,12 @@ const texts = {
     notes: "Notes",
     ONE_TIME: "Unique",
     payee: "Bénéficiaire",
-    sellOrderNotesPrefix: "Vendu:",
-    stockLendingInterestNotes: "Gains des prêts d'actions",
     to: "à",
     transferDestination: "Transferé",
     transferSource: "Transferé",
+    referral: "Récompense de recommandation",
+    sellOrderNotesPrefix: "Vendu:",
+    stockLendingInterestNotes: "Gains des prêts d'actions",
     wealthSimpleCashTransferReceivedNotesPrefix:
       "Transfert WealthSimple Cash reçu",
     wealthSimpleCashTransferSentNotesPrefix:
@@ -944,6 +946,10 @@ async function accountTransactionsToCsvBlob(transactions) {
       case "PROMOTION/INCENTIVE_BONUS":
         payee = texts[language].wealthSimple;
         notes = `${texts[language].incentiveBonus}`;
+        break;
+      case "REFERRAL":
+        payee = texts[language].wealthSimple;
+        notes = `${texts[language].referral}`;
         break;
       case "INSTITUTIONAL_TRANSFER_INTENT/TRANSFER_IN":
         info = await institutionalTransfer(transaction.externalCanonicalId);
