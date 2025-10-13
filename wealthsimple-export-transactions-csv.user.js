@@ -5,7 +5,7 @@
 // @namespace   Violentmonkey Scripts
 // @match       https://my.wealthsimple.com/*
 // @grant       GM.xmlHttpRequest
-// @version     1.1.11
+// @version     1.2.1
 // @license     MIT
 // @author      eaglesemanation
 // @description Adds export buttons to Activity feed and to Account specific activity. They will export transactions within certain timeframe into CSV, options are "This Month", "Last 3 Month", "All". This should provide better transaction description than what is provided by preexisting CSV export feature.
@@ -28,7 +28,12 @@ const texts = {
     buttonAll: "All",
     buyOrderNotesPrefix: "Bought",
     cashback: "Cashback",
+    cashWithdrawal: "Cash withdrawal",
     category: "Category",
+    chequeDeposit: "Cheque deposit",
+    chequeWithdrawal: "Cheque withdrawal",
+    creditCardPaid: "Credit card paid",
+    creditCardPaymentReceived: "Credit card payment received",
     cryptoReceived: "Crypto received:",
     cryptoStaked: "Crypto staked:",
     cryptoStakingReward: "Crypto staking reward:",
@@ -42,8 +47,8 @@ const texts = {
     incentiveBonus: "Promotional bonus",
     institutionalTransferReceived: "Interinstitutional transfer",
     institutionalTransferFeeRefund: "Transfer fee refund",
-    wealthSimple: "WealthSimple",
     interestNotes: "Interest",
+    internationalTransfer: "International transfer",
     MONTHLY: "Monthly",
     nonRegistered: "Non-registered",
     notes: "Notes",
@@ -55,6 +60,7 @@ const texts = {
     referral: "Referral bonus",
     sellOrderNotesPrefix: "Sold",
     stockLendingInterestNotes: "Stock lending earnings",
+    wealthSimple: "WealthSimple",
     wealthSimpleCashTransferReceivedNotesPrefix:
       "Received WealthSimple Cash transfer",
     wealthSimpleCashTransferSentNotesPrefix:
@@ -76,7 +82,12 @@ const texts = {
     buttonAll: "Tout",
     buyOrderNotesPrefix: "Acheté:",
     cashback: "Remise en argent",
+    cashWithdrawal: "Retrait en argent",
     category: "Categorie",
+    chequeDeposit: "Dépôt par chèque",
+    chequeWithdrawal: "Retrait par chèque",
+    creditCardPaid: "Carte de crédit payée",
+    creditCardPaymentReceived: "Paiement de carte de crédit reçu",
     cryptoReceived: "Crypto reçue:",
     cryptoStaked: "Crypto stakée:",
     cryptoStakingReward: "Récompense pour crypto stakée:",
@@ -90,8 +101,8 @@ const texts = {
     incentiveBonus: "Prime de récompense",
     institutionalTransferReceived: "Transfert interinstitution",
     institutionalTransferFeeRefund: "Remboursement des frais de transfert",
-    wealthSimple: "WealthSimple",
     interestNotes: "Intérêt",
+    internationalTransfer: "Transfert international",
     MONTHLY: "Mensuel",
     nonRegistered: "Non enregistré",
     notes: "Notes",
@@ -103,6 +114,7 @@ const texts = {
     referral: "Récompense de recommandation",
     sellOrderNotesPrefix: "Vendu:",
     stockLendingInterestNotes: "Gains des prêts d'actions",
+    wealthSimple: "WealthSimple",
     wealthSimpleCashTransferReceivedNotesPrefix:
       "Transfert WealthSimple Cash reçu",
     wealthSimpleCashTransferSentNotesPrefix:
@@ -844,6 +856,10 @@ async function accountTransactionsToCsvBlob(transactions) {
         payee = transaction.eTransferEmail;
         notes = `${texts[language].withdrawalETransferNotesPrefix} ${texts[language].to} ${transaction.eTransferName}`;
         break;
+      case "DEPOSIT/CHEQUE":
+        payee = texts[language].chequeDeposit;
+        notes = `${texts[language].chequeDeposit}`;
+        break;
       case "DEPOSIT/E_TRANSFER":
       case "DEPOSIT/E_TRANSFER_FUNDING":
         payee = transaction.eTransferEmail;
@@ -875,6 +891,14 @@ async function accountTransactionsToCsvBlob(transactions) {
         payee = transaction.billPayPayeeNickname || transaction.billPayCompanyName;
         notes = `${payee} (${texts[language][transaction.frequency]})`;
         category = transaction.aftTransactionCategory;
+        break;
+      case "WITHDRAWAL/CHEQUE":
+        payee = texts[language].chequeWithdrawal;
+        notes = `${texts[language].chequeWithdrawal}`;
+        break;
+      case "WITHDRAWAL/CROSS_BORDER":
+        payee = texts[language].internationalTransfer;
+        notes = `${texts[language].internationalTransfer}`;
         break;
       case "WITHDRAWAL/AFT":
         payee = transaction.aftOriginatorName;
@@ -961,8 +985,33 @@ async function accountTransactionsToCsvBlob(transactions) {
         notes = `${texts[language].institutionalTransferFeeRefund}`;
         break;
       case "REIMBURSEMENT/CASHBACK":
+      case "REIMBURSEMENT/REWARD":
         payee = texts[language].wealthSimple;
         notes = `${texts[language].cashback}`;
+        break;
+      case "CREDIT_CARD/PURCHASE":
+        payee = transaction.spendMerchant;
+        notes = payee;
+        break;
+      case "CREDIT_CARD/INTEREST":
+        payee = texts[language].wealthSimple;
+        notes = texts[language].interestNotes;
+        break;
+      case "CREDIT_CARD/REFUND":
+        payee = transaction.spendMerchant;
+        notes = payee;
+        break;
+      case "CREDIT_CARD/CASH_WITHDRAWAL":
+        payee = texts[language].cashWithdrawal;
+        notes = payee;
+        break;
+      case "CREDIT_CARD/PAYMENT":
+        payee = texts[language].creditCardPaymentReceived;
+        notes = `${texts[language].creditCardPaymentReceived}`;
+        break;
+      case "CREDIT_CARD_PAYMENT":
+        payee = texts[language].creditCardPaid;
+        notes = `${texts[language].creditCardPaid}`;
         break;
       default:
         console.error(
