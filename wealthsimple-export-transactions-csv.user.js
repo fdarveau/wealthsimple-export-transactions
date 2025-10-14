@@ -42,6 +42,7 @@ const texts = {
     dividendReceivedNotesPrefix: "Received dividend",
     dividendReinvestedNotesPrefix: "Reinvested dividend into",
     electronicFundsTransferNotesPrefix: "Transfer",
+    fees: "Fees",
     from: "from",
     fromTimeFrame: "from",
     incentiveBonus: "Promotional bonus",
@@ -53,6 +54,7 @@ const texts = {
     nonRegistered: "Non-registered",
     notes: "Notes",
     ONE_TIME: "One time",
+    originalCurrencyAmount: "Original currency amount",
     payee: "Payee",
     to: "to",
     transferDestination: "Transfered",
@@ -96,6 +98,7 @@ const texts = {
     dividendReceivedNotesPrefix: "Dividendes reçus",
     dividendReinvestedNotesPrefix: "Dividendes réinvestis dans",
     electronicFundsTransferNotesPrefix: "Transfert",
+    fees: "Frais",
     from: "de",
     fromTimeFrame: "du",
     incentiveBonus: "Prime de récompense",
@@ -107,6 +110,7 @@ const texts = {
     nonRegistered: "Non enregistré",
     notes: "Notes",
     ONE_TIME: "Unique",
+    originalCurrencyAmount: "Montant dans la devise originale :",
     payee: "Bénéficiaire",
     to: "à",
     transferDestination: "Transferé",
@@ -397,6 +401,14 @@ function getOauthCookie() {
  * @property {string} billPayPayeeNickname
  * @property {string} frequency
  * @property {string} spendMerchant
+ * @property {string} chequeNumber
+ * @property {string} redactedExternalAccountNumber
+ * @property {string} counterPartyCurrency
+ * @property {string} counterPartyCurrencyAmount
+ * @property {string} counterPartyName
+ * @property {string} fxRate
+ * @property {string} fees
+ * @property {string} rewardProgram
  */
 
 const activityFeedItemFragment = `
@@ -420,7 +432,15 @@ const activityFeedItemFragment = `
       billPayCompanyName
       billPayPayeeNickname
       frequency,
-      spendMerchant
+      spendMerchant,
+      chequeNumber,
+      redactedExternalAccountNumber,
+      counterPartyCurrency,
+      counterPartyCurrencyAmount,
+      counterPartyName,
+      fxRate,
+      fees,
+      rewardProgram,
     }
   `;
 
@@ -894,11 +914,17 @@ async function accountTransactionsToCsvBlob(transactions) {
         break;
       case "WITHDRAWAL/CHEQUE":
         payee = texts[language].chequeWithdrawal;
-        notes = `${texts[language].chequeWithdrawal}`;
+        notes = `${texts[language].chequeWithdrawal} (#${transaction.chequeNumber.replace(/^0*/, "")})`;
         break;
       case "WITHDRAWAL/CROSS_BORDER":
-        payee = texts[language].internationalTransfer;
-        notes = `${texts[language].internationalTransfer}`;
+        payee = `${transaction.counterPartyName} - ***${transaction.redactedExternalAccountNumber}`;
+        notes = `${texts[language].institutionalTransferReceived} ${texts[language].from} ${payee}`;
+        if (transaction.fees && transaction.fees !== "0") {
+          notes += ` - ${texts[language].fees} : ${transaction.fees}$`;
+        }
+        if (transaction.counterPartyCurrency) {
+          notes += ` (${texts[language].originalCurrencyAmount} : ${transaction.counterPartyCurrency} ${transaction.counterPartyCurrencyAmount})`;
+        }
         break;
       case "WITHDRAWAL/AFT":
         payee = transaction.aftOriginatorName;
@@ -988,6 +1014,9 @@ async function accountTransactionsToCsvBlob(transactions) {
       case "REIMBURSEMENT/REWARD":
         payee = texts[language].wealthSimple;
         notes = `${texts[language].cashback}`;
+        if (transaction.rewardProgram) {
+          notes += ` - ${transaction.rewardProgram}`;
+        }
         break;
       case "CREDIT_CARD/PURCHASE":
         payee = transaction.spendMerchant;
@@ -1002,8 +1031,8 @@ async function accountTransactionsToCsvBlob(transactions) {
         notes = payee;
         break;
       case "CREDIT_CARD/CASH_WITHDRAWAL":
-        payee = texts[language].cashWithdrawal;
-        notes = payee;
+        payee = transaction.spendMerchant;
+        notes = `${texts[language].cashWithdrawal}`;
         break;
       case "CREDIT_CARD/PAYMENT":
         payee = texts[language].creditCardPaymentReceived;
