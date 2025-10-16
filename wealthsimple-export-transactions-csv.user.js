@@ -249,6 +249,15 @@ stylesheet.insertRule(css`
   }
 `);
 stylesheet.insertRule(css`
+  :root[data-appearance="dark"] .export-csv-button:hover {
+    color: rgb(245, 244, 244);
+    background-image: linear-gradient(
+      0deg, 
+      rgba(255, 255, 255, 0.08) 0%, 
+      rgba(255, 255, 255, 0.08) 100%)
+  }
+`);
+stylesheet.insertRule(css`
   .export-csv-button {
     display: inline-flex;
     background: rgb(255, 255, 255);
@@ -259,6 +268,13 @@ stylesheet.insertRule(css`
     padding-right: 1em;
     font-family: "FuturaPT-Demi";
     font-weight: unset;
+  }
+`);
+stylesheet.insertRule(css`
+  :root[data-appearance="dark"] .export-csv-button {
+    color: rgb(245, 244, 244);
+    background: rgb(28, 27, 27);
+    border: 1px solid rgba(255, 255, 255, 0.12)
   }
 `);
 
