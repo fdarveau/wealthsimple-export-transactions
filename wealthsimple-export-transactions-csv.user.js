@@ -674,6 +674,8 @@ async function accountFinancials() {
     if (!nickname) {
       if (e.node.unifiedAccountType === "CASH") {
         nickname = "Cash";
+      } else if (e.node.unifiedAccountType === "CREDIT_CARD") {
+        nickname = "Credit Card";
       } else if (self_directed_re.test(e.node.unifiedAccountType)) {
         let found = e.node.unifiedAccountType.match(self_directed_re);
         nickname = found.groups.name;
@@ -1133,6 +1135,12 @@ function getAccountLabel(accountId) {
   let accountLabel = accountIdParts[0];
   if (accountId.startsWith('non-registered')) {
     accountLabel = 'non-registered';
+    if (accountIdParts.length >= 2) {
+      accountLabel += ` ${accountIdParts[2]}`;
+    }
+  }
+  if (accountIdParts[1] === 'credit' && accountIdParts[2] === 'card'){
+    accountLabel = 'credit card';
     if (accountIdParts.length >= 2) {
       accountLabel += ` ${accountIdParts[2]}`;
     }
