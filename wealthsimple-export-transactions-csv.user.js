@@ -22,6 +22,7 @@ const texts = {
     accountDebitTransactionNotesPrefix: "Preauthorized debit",
     amount: "Amount",
     ANNUALY: "ANNUAL",
+    atmFeeReimbursement: "ATM fee reimbursement",
     buttonsLabel: "Export transactions as CSV",
     buttonThisMonth: "This month",
     buttonLast3Months: "Last 3 months",
@@ -50,6 +51,7 @@ const texts = {
     institutionalTransferFeeRefund: "Transfer fee refund",
     interestNotes: "Interest",
     internationalTransfer: "International transfer",
+    manufacturedDividendReceivedNotesPrefix: "Received manufactured dividend",
     MONTHLY: "Monthly",
     nonRegistered: "Non-registered",
     notes: "Notes",
@@ -78,6 +80,7 @@ const texts = {
     accountDebitTransactionNotesPrefix: "Débit préautorisé",
     amount: "Montant",
     ANNUALY: "Annuel",
+    atmFeeReimbursement: "Remboursement des frais de guichet automatique",
     buttonsLabel: "Exporter les transactions au format CSV",
     buttonThisMonth: "Ce mois-ci",
     buttonLast3Months: "Les 3 derniers mois",
@@ -106,6 +109,7 @@ const texts = {
     institutionalTransferFeeRefund: "Remboursement des frais de transfert",
     interestNotes: "Intérêt",
     internationalTransfer: "Transfert international",
+    manufacturedDividendReceivedNotesPrefix: "Dividendes sur titres empruntés reçus",
     MONTHLY: "Mensuel",
     nonRegistered: "Non enregistré",
     notes: "Notes",
@@ -889,6 +893,10 @@ async function accountTransactionsToCsvBlob(transactions) {
         payee = transaction.assetSymbol;
         notes = `${texts[language].dividendReceivedNotesPrefix} ${texts[language].from} ${transaction.assetSymbol}`;
         break;
+      case "MANUFACTURED_DIVIDEND":
+        payee = transaction.assetSymbol;
+        notes = `${texts[language].manufacturedDividendReceivedNotesPrefix} ${texts[language].from} ${transaction.assetSymbol}`;
+        break;
       case "DIY_BUY/DIVIDEND_REINVESTMENT":
         payee = transaction.assetSymbol;
         notes = `${texts[language].dividendReinvestedNotesPrefix} ${transaction.assetQuantity} ${transaction.assetSymbol}`;
@@ -900,6 +908,7 @@ async function accountTransactionsToCsvBlob(transactions) {
         break;
       case "DIY_SELL/MARKET_ORDER":
       case "DIY_SELL/LIMIT_ORDER":
+      case "DIY_SELL/FRACTIONAL_ORDER":
         payee = transaction.assetSymbol;
         notes = `${texts[language].sellOrderNotesPrefix} ${transaction.assetQuantity} ${transaction.assetSymbol}`;
         break;
@@ -1017,6 +1026,10 @@ async function accountTransactionsToCsvBlob(transactions) {
         if (transaction.rewardProgram) {
           notes += ` - ${transaction.rewardProgram}`;
         }
+        break;
+      case "REIMBURSEMENT/ATM":
+        payee = texts[language].wealthSimple;
+        notes = `${texts[language].atmFeeReimbursement}`;
         break;
       case "CREDIT_CARD/PURCHASE":
         payee = transaction.spendMerchant;
