@@ -1100,7 +1100,7 @@ async function saveBlobsToFiles(accountBlobs, accountsInfo, fromDate) {
     link.setAttribute(
       "href",
       "data:text/csv;charset=utf-8,%EF%BB%BF" +
-        encodeURI(await accountBlobs[acc].text())
+        encodeURIComponent(await accountBlobs[acc].text())
     );
     link.setAttribute(
       "download",
