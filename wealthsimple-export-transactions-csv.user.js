@@ -180,16 +180,22 @@ function getPageInfo() {
 
   let pathParts = window.location.pathname.split("/");
   if (pathParts.length === 4 && pathParts[2] === "account-details") {
-    const actionsMenuSelector = `div:has(>div>div>button[data-qa="account-actions-menu"])`;
-
     info.pageType = pathParts[2];
+
+    const actionsMenuSelector = `div:has(>div>div>button[data-qa="account-actions-menu"])`;
     let anchor = document.querySelectorAll(actionsMenuSelector);
+    if (anchor.length === 0) {
+      // Second attempt at finding an anchor element in case there is no actions menu
+      const accountDropdownSelector = `#main>div>div>div>div>div>div:empty`;
+      anchor = document.querySelectorAll(accountDropdownSelector);
+    }
     if (anchor.length !== 1) {
       return emptyInfo;
     }
+
     info.anchor = anchor[0];
     info.readyPredicate = () => info.anchor.parentNode.childNodes.length === 2;
-  } else  if (pathParts.length === 3 && (pathParts[2] === "activity")) {
+  } else if (pathParts.length === 3 && (pathParts[2] === "activity")) {
     // All classes within HTML have been obfuscated/minified, using icons as a starting point, in hope that the rest of the layout doesn't change much.
     const buttonsContainerQuery = "main > div:has(h1)"
 
