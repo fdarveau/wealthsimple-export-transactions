@@ -5,7 +5,7 @@
 // @namespace   Violentmonkey Scripts
 // @match       https://my.wealthsimple.com/*
 // @grant       GM.xmlHttpRequest
-// @version     1.1.11
+// @version     1.2.2
 // @license     MIT
 // @author      eaglesemanation
 // @description Adds export buttons to Activity feed and to Account specific activity. They will export transactions within certain timeframe into CSV, options are "This Month", "Last 3 Month", "All". This should provide better transaction description than what is provided by preexisting CSV export feature.
@@ -22,13 +22,19 @@ const texts = {
     accountDebitTransactionNotesPrefix: "Preauthorized debit",
     amount: "Amount",
     ANNUALY: "ANNUAL",
+    atmFeeReimbursement: "ATM fee reimbursement",
     buttonsLabel: "Export transactions as CSV",
     buttonThisMonth: "This month",
     buttonLast3Months: "Last 3 months",
     buttonAll: "All",
     buyOrderNotesPrefix: "Bought",
     cashback: "Cashback",
+    cashWithdrawal: "Cash withdrawal",
     category: "Category",
+    chequeDeposit: "Cheque deposit",
+    chequeWithdrawal: "Cheque withdrawal",
+    creditCardPaid: "Credit card paid",
+    creditCardPaymentReceived: "Credit card payment received",
     cryptoReceived: "Crypto received:",
     cryptoStaked: "Crypto staked:",
     cryptoStakingReward: "Crypto staking reward:",
@@ -37,17 +43,20 @@ const texts = {
     dividendReceivedNotesPrefix: "Received dividend",
     dividendReinvestedNotesPrefix: "Reinvested dividend into",
     electronicFundsTransferNotesPrefix: "Transfer",
+    fees: "Fees",
     from: "from",
     fromTimeFrame: "from",
     incentiveBonus: "Promotional bonus",
     institutionalTransferReceived: "Interinstitutional transfer",
     institutionalTransferFeeRefund: "Transfer fee refund",
-    wealthSimple: "WealthSimple",
     interestNotes: "Interest",
+    internationalTransfer: "International transfer",
+    manufacturedDividendReceivedNotesPrefix: "Received manufactured dividend",
     MONTHLY: "Monthly",
     nonRegistered: "Non-registered",
     notes: "Notes",
     ONE_TIME: "One time",
+    originalCurrencyAmount: "Original currency amount",
     payee: "Payee",
     to: "to",
     transferDestination: "Transfered",
@@ -55,6 +64,7 @@ const texts = {
     referral: "Referral bonus",
     sellOrderNotesPrefix: "Sold",
     stockLendingInterestNotes: "Stock lending earnings",
+    wealthSimple: "WealthSimple",
     wealthSimpleCashTransferReceivedNotesPrefix:
       "Received WealthSimple Cash transfer",
     wealthSimpleCashTransferSentNotesPrefix:
@@ -70,13 +80,19 @@ const texts = {
     accountDebitTransactionNotesPrefix: "Débit préautorisé",
     amount: "Montant",
     ANNUALY: "Annuel",
+    atmFeeReimbursement: "Remboursement des frais de guichet automatique",
     buttonsLabel: "Exporter les transactions au format CSV",
     buttonThisMonth: "Ce mois-ci",
     buttonLast3Months: "Les 3 derniers mois",
     buttonAll: "Tout",
     buyOrderNotesPrefix: "Acheté:",
     cashback: "Remise en argent",
+    cashWithdrawal: "Retrait en argent",
     category: "Categorie",
+    chequeDeposit: "Dépôt par chèque",
+    chequeWithdrawal: "Retrait par chèque",
+    creditCardPaid: "Carte de crédit payée",
+    creditCardPaymentReceived: "Paiement de carte de crédit reçu",
     cryptoReceived: "Crypto reçue:",
     cryptoStaked: "Crypto stakée:",
     cryptoStakingReward: "Récompense pour crypto stakée:",
@@ -85,17 +101,20 @@ const texts = {
     dividendReceivedNotesPrefix: "Dividendes reçus",
     dividendReinvestedNotesPrefix: "Dividendes réinvestis dans",
     electronicFundsTransferNotesPrefix: "Transfert",
+    fees: "Frais",
     from: "de",
     fromTimeFrame: "du",
     incentiveBonus: "Prime de récompense",
     institutionalTransferReceived: "Transfert interinstitution",
     institutionalTransferFeeRefund: "Remboursement des frais de transfert",
-    wealthSimple: "WealthSimple",
     interestNotes: "Intérêt",
+    internationalTransfer: "Transfert international",
+    manufacturedDividendReceivedNotesPrefix: "Dividendes sur titres empruntés reçus",
     MONTHLY: "Mensuel",
     nonRegistered: "Non enregistré",
     notes: "Notes",
     ONE_TIME: "Unique",
+    originalCurrencyAmount: "Montant dans la devise originale :",
     payee: "Bénéficiaire",
     to: "à",
     transferDestination: "Transferé",
@@ -103,6 +122,7 @@ const texts = {
     referral: "Récompense de recommandation",
     sellOrderNotesPrefix: "Vendu:",
     stockLendingInterestNotes: "Gains des prêts d'actions",
+    wealthSimple: "WealthSimple",
     wealthSimpleCashTransferReceivedNotesPrefix:
       "Transfert WealthSimple Cash reçu",
     wealthSimpleCashTransferSentNotesPrefix:
@@ -160,16 +180,22 @@ function getPageInfo() {
 
   let pathParts = window.location.pathname.split("/");
   if (pathParts.length === 4 && pathParts[2] === "account-details") {
-    const actionsMenuSelector = `div:has(>div>div>button[data-qa="account-actions-menu"])`;
-
     info.pageType = pathParts[2];
+
+    const actionsMenuSelector = `div:has(>div>div>button[data-qa="account-actions-menu"])`;
     let anchor = document.querySelectorAll(actionsMenuSelector);
+    if (anchor.length === 0) {
+      // Second attempt at finding an anchor element in case there is no actions menu
+      const accountDropdownSelector = `#main>div>div>div>div>div>div:empty`;
+      anchor = document.querySelectorAll(accountDropdownSelector);
+    }
     if (anchor.length !== 1) {
       return emptyInfo;
     }
+
     info.anchor = anchor[0];
     info.readyPredicate = () => info.anchor.parentNode.childNodes.length === 2;
-  } else  if (pathParts.length === 3 && (pathParts[2] === "activity")) {
+  } else if (pathParts.length === 3 && (pathParts[2] === "activity")) {
     // All classes within HTML have been obfuscated/minified, using icons as a starting point, in hope that the rest of the layout doesn't change much.
     const buttonsContainerQuery = "main > div:has(h1)"
 
@@ -401,6 +427,14 @@ function getOauthCookie() {
  * @property {string} billPayPayeeNickname
  * @property {string} frequency
  * @property {string} spendMerchant
+ * @property {string} chequeNumber
+ * @property {string} redactedExternalAccountNumber
+ * @property {string} counterPartyCurrency
+ * @property {string} counterPartyCurrencyAmount
+ * @property {string} counterPartyName
+ * @property {string} fxRate
+ * @property {string} fees
+ * @property {string} rewardProgram
  */
 
 const activityFeedItemFragment = `
@@ -424,7 +458,15 @@ const activityFeedItemFragment = `
       billPayCompanyName
       billPayPayeeNickname
       frequency,
-      spendMerchant
+      spendMerchant,
+      chequeNumber,
+      redactedExternalAccountNumber,
+      counterPartyCurrency,
+      counterPartyCurrencyAmount,
+      counterPartyName,
+      fxRate,
+      fees,
+      rewardProgram,
     }
   `;
 
@@ -654,6 +696,8 @@ async function accountFinancials() {
     if (!nickname) {
       if (e.node.unifiedAccountType === "CASH") {
         nickname = "Cash";
+      } else if (e.node.unifiedAccountType === "CREDIT_CARD") {
+        nickname = "Credit Card";
       } else if (self_directed_re.test(e.node.unifiedAccountType)) {
         let found = e.node.unifiedAccountType.match(self_directed_re);
         nickname = found.groups.name;
@@ -860,6 +904,10 @@ async function accountTransactionsToCsvBlob(transactions) {
         payee = transaction.eTransferEmail;
         notes = `${texts[language].withdrawalETransferNotesPrefix} ${texts[language].to} ${transaction.eTransferName}`;
         break;
+      case "DEPOSIT/CHEQUE":
+        payee = texts[language].chequeDeposit;
+        notes = `${texts[language].chequeDeposit}`;
+        break;
       case "DEPOSIT/E_TRANSFER":
       case "DEPOSIT/E_TRANSFER_FUNDING":
         payee = transaction.eTransferEmail;
@@ -868,6 +916,10 @@ async function accountTransactionsToCsvBlob(transactions) {
       case "DIVIDEND/DIY_DIVIDEND":
         payee = transaction.assetSymbol;
         notes = `${texts[language].dividendReceivedNotesPrefix} ${texts[language].from} ${transaction.assetSymbol}`;
+        break;
+      case "MANUFACTURED_DIVIDEND":
+        payee = transaction.assetSymbol;
+        notes = `${texts[language].manufacturedDividendReceivedNotesPrefix} ${texts[language].from} ${transaction.assetSymbol}`;
         break;
       case "DIY_BUY/DIVIDEND_REINVESTMENT":
         payee = transaction.assetSymbol;
@@ -880,6 +932,7 @@ async function accountTransactionsToCsvBlob(transactions) {
         break;
       case "DIY_SELL/MARKET_ORDER":
       case "DIY_SELL/LIMIT_ORDER":
+      case "DIY_SELL/FRACTIONAL_ORDER":
         payee = transaction.assetSymbol;
         notes = `${texts[language].sellOrderNotesPrefix} ${transaction.assetQuantity} ${transaction.assetSymbol}`;
         break;
@@ -891,6 +944,20 @@ async function accountTransactionsToCsvBlob(transactions) {
         payee = transaction.billPayPayeeNickname || transaction.billPayCompanyName;
         notes = `${payee} (${texts[language][transaction.frequency]})`;
         category = transaction.aftTransactionCategory;
+        break;
+      case "WITHDRAWAL/CHEQUE":
+        payee = texts[language].chequeWithdrawal;
+        notes = `${texts[language].chequeWithdrawal} (#${transaction.chequeNumber.replace(/^0*/, "")})`;
+        break;
+      case "WITHDRAWAL/CROSS_BORDER":
+        payee = `${transaction.counterPartyName} - ***${transaction.redactedExternalAccountNumber}`;
+        notes = `${texts[language].institutionalTransferReceived} ${texts[language].from} ${payee}`;
+        if (transaction.fees && transaction.fees !== "0") {
+          notes += ` - ${texts[language].fees} : ${transaction.fees}$`;
+        }
+        if (transaction.counterPartyCurrency) {
+          notes += ` (${texts[language].originalCurrencyAmount} : ${transaction.counterPartyCurrency} ${transaction.counterPartyCurrencyAmount})`;
+        }
         break;
       case "WITHDRAWAL/AFT":
         payee = transaction.aftOriginatorName;
@@ -977,8 +1044,40 @@ async function accountTransactionsToCsvBlob(transactions) {
         notes = `${texts[language].institutionalTransferFeeRefund}`;
         break;
       case "REIMBURSEMENT/CASHBACK":
+      case "REIMBURSEMENT/REWARD":
         payee = texts[language].wealthSimple;
         notes = `${texts[language].cashback}`;
+        if (transaction.rewardProgram) {
+          notes += ` - ${transaction.rewardProgram}`;
+        }
+        break;
+      case "REIMBURSEMENT/ATM":
+        payee = texts[language].wealthSimple;
+        notes = `${texts[language].atmFeeReimbursement}`;
+        break;
+      case "CREDIT_CARD/PURCHASE":
+        payee = transaction.spendMerchant;
+        notes = payee;
+        break;
+      case "CREDIT_CARD/INTEREST":
+        payee = texts[language].wealthSimple;
+        notes = texts[language].interestNotes;
+        break;
+      case "CREDIT_CARD/REFUND":
+        payee = transaction.spendMerchant;
+        notes = payee;
+        break;
+      case "CREDIT_CARD/CASH_WITHDRAWAL":
+        payee = transaction.spendMerchant;
+        notes = `${texts[language].cashWithdrawal}`;
+        break;
+      case "CREDIT_CARD/PAYMENT":
+        payee = texts[language].creditCardPaymentReceived;
+        notes = `${texts[language].creditCardPaymentReceived}`;
+        break;
+      case "CREDIT_CARD_PAYMENT":
+        payee = texts[language].creditCardPaid;
+        notes = `${texts[language].creditCardPaid}`;
         break;
       default:
         console.error(
@@ -1023,7 +1122,7 @@ async function saveBlobsToFiles(accountBlobs, accountsInfo, fromDate) {
     link.setAttribute(
       "href",
       "data:text/csv;charset=utf-8,%EF%BB%BF" +
-        encodeURI(await accountBlobs[acc].text())
+        encodeURIComponent(await accountBlobs[acc].text())
     );
     link.setAttribute(
       "download",
@@ -1058,6 +1157,12 @@ function getAccountLabel(accountId) {
   let accountLabel = accountIdParts[0];
   if (accountId.startsWith('non-registered')) {
     accountLabel = 'non-registered';
+    if (accountIdParts.length >= 2) {
+      accountLabel += ` ${accountIdParts[2]}`;
+    }
+  }
+  if (accountIdParts[1] === 'credit' && accountIdParts[2] === 'card'){
+    accountLabel = 'credit card';
     if (accountIdParts.length >= 2) {
       accountLabel += ` ${accountIdParts[2]}`;
     }
