@@ -5,7 +5,7 @@
 // @namespace   Violentmonkey Scripts
 // @match       https://my.wealthsimple.com/*
 // @grant       GM.xmlHttpRequest
-// @version     1.2.3
+// @version     1.2.4
 // @license     MIT
 // @author      eaglesemanation
 // @description Adds export buttons to Activity feed and to Account specific activity. They will export transactions within certain timeframe into CSV, options are "This Month", "Last 3 Month", "All". This should provide better transaction description than what is provided by preexisting CSV export feature.
@@ -67,8 +67,7 @@ const texts = {
     wealthSimple: "WealthSimple",
     wealthSimpleCashTransferReceivedNotesPrefix:
       "Received WealthSimple Cash transfer",
-    wealthSimpleCashTransferSentNotesPrefix:
-      "Sent WealthSimple Cash transfer",
+    wealthSimpleCashTransferSentNotesPrefix: "Sent WealthSimple Cash transfer",
     withdrawalETransferNotesPrefix: "Sent INTERAC e-Transfer",
     withNote: "with note",
     unknown: "Unknown",
@@ -109,7 +108,8 @@ const texts = {
     institutionalTransferFeeRefund: "Remboursement des frais de transfert",
     interestNotes: "Intérêt",
     internationalTransfer: "Transfert international",
-    manufacturedDividendReceivedNotesPrefix: "Dividendes sur titres empruntés reçus",
+    manufacturedDividendReceivedNotesPrefix:
+      "Dividendes sur titres empruntés reçus",
     MONTHLY: "Mensuel",
     nonRegistered: "Non enregistré",
     notes: "Notes",
@@ -134,10 +134,9 @@ const texts = {
   },
 };
 
-
 /**
  * Refreshes the language to make sure texts are shown in the correct language
- * 
+ *
  * @param {Date} date
  */
 function refreshLanguage() {
@@ -179,25 +178,11 @@ function getPageInfo() {
   let info = structuredClone(emptyInfo);
 
   let pathParts = window.location.pathname.split("/");
-  if (pathParts.length === 4 && pathParts[2] === "account-details") {
-    info.pageType = pathParts[2];
-
-    const actionsMenuSelector = `div:has(>div>div>button[data-qa="account-actions-menu"])`;
-    let anchor = document.querySelectorAll(actionsMenuSelector);
-    if (anchor.length === 0) {
-      // Second attempt at finding an anchor element in case there is no actions menu
-      const accountDropdownSelector = `#main>div>div>div>div>div>div:empty`;
-      anchor = document.querySelectorAll(accountDropdownSelector);
-    }
-    if (anchor.length !== 1) {
-      return emptyInfo;
-    }
-
-    info.anchor = anchor[0];
-    info.readyPredicate = () => info.anchor.parentNode.childNodes.length === 2;
-  } else if (pathParts.length === 3 && (pathParts[2] === "activity")) {
-    // All classes within HTML have been obfuscated/minified, using icons as a starting point, in hope that the rest of the layout doesn't change much.
-    const buttonsContainerQuery = "main > div:has(h1)"
+  if (
+    (pathParts.length === 4 && pathParts[2] === "account-details") ||
+    (pathParts.length === 3 && pathParts[2] === "activity")
+  ) {
+    const buttonsContainerQuery = "div[data-drawer-navbar='true']";
 
     info.pageType = pathParts[2];
     let anchor = document.querySelectorAll(buttonsContainerQuery);
@@ -205,13 +190,13 @@ function getPageInfo() {
       return emptyInfo;
     }
     info.anchor = anchor[0];
-    info.readyPredicate = () => info.anchor.querySelectorAll("h2").length >= 2;
-  } else {
-    // Didn't match any expected page
-    return emptyInfo;
+    info.readyPredicate = () =>
+      info.anchor.parentNode.querySelectorAll("h2").length >= 2;
+    return info;
   }
 
-  return info;
+  // Didn't match any expected page
+  return emptyInfo;
 }
 
 // ID for quickly verifying if buttons were already injected
@@ -278,9 +263,10 @@ stylesheet.insertRule(css`
   :root[data-appearance="dark"] .export-csv-button:hover {
     color: rgb(245, 244, 244);
     background-image: linear-gradient(
-      0deg, 
-      rgba(255, 255, 255, 0.08) 0%, 
-      rgba(255, 255, 255, 0.08) 100%)
+      0deg,
+      rgba(255, 255, 255, 0.08) 0%,
+      rgba(255, 255, 255, 0.08) 100%
+    );
   }
 `);
 stylesheet.insertRule(css`
@@ -300,7 +286,7 @@ stylesheet.insertRule(css`
   :root[data-appearance="dark"] .export-csv-button {
     color: rgb(245, 244, 244);
     background: rgb(28, 27, 27);
-    border: 1px solid rgba(255, 255, 255, 0.12)
+    border: 1px solid rgba(255, 255, 255, 0.12);
   }
 `);
 
@@ -318,7 +304,7 @@ function addButtons(pageInfo) {
   buttonRow.style.display = "flex";
   buttonRow.style.alignItems = "baseline";
   buttonRow.style.gap = "1em";
-  buttonRow.style.marginLeft = "auto";
+  // buttonRow.style.marginLeft = "auto";
 
   let buttonRowText = document.createElement("span");
   buttonRowText.innerText = texts[language].buttonsLabel;
@@ -374,10 +360,10 @@ function addButtons(pageInfo) {
   }
 
   if (pageInfo.anchor.querySelector("h1") !== null) {
-    pageInfo.anchor.querySelector("h1").parentNode.appendChild(buttonRow)
+    pageInfo.anchor.querySelector("h1").parentNode.appendChild(buttonRow);
   } else {
     let anchorParent = pageInfo.anchor.parentNode;
-    anchorParent.insertBefore(buttonRow, pageInfo.anchor);
+    anchorParent.insertBefore(buttonRow, pageInfo.anchor.nextSibling);
     anchorParent.style.gap = "1em";
     pageInfo.anchor.style.marginLeft = "0";
   }
@@ -941,7 +927,8 @@ async function accountTransactionsToCsvBlob(transactions) {
         notes = payee;
         break;
       case "WITHDRAWAL/BILL_PAY":
-        payee = transaction.billPayPayeeNickname || transaction.billPayCompanyName;
+        payee =
+          transaction.billPayPayeeNickname || transaction.billPayCompanyName;
         notes = `${payee} (${texts[language][transaction.frequency]})`;
         category = transaction.aftTransactionCategory;
         break;
@@ -1081,7 +1068,7 @@ async function accountTransactionsToCsvBlob(transactions) {
         break;
       default:
         console.error(
-          `${dateStr} transaction [${type}] has unexpected type. Object logged below. Skipping`
+          `${dateStr} transaction [${type}] has unexpected type. Object logged below. Skipping`,
         );
         console.log(transaction);
         continue;
@@ -1122,11 +1109,11 @@ async function saveBlobsToFiles(accountBlobs, accountsInfo, fromDate) {
     link.setAttribute(
       "href",
       "data:text/csv;charset=utf-8,%EF%BB%BF" +
-        encodeURIComponent(await accountBlobs[acc].text())
+        encodeURIComponent(await accountBlobs[acc].text()),
     );
     link.setAttribute(
       "download",
-      `Wealthsimple ${accToName[acc]} Transactions ${timeFrame}.csv`
+      `Wealthsimple ${accToName[acc]} Transactions ${timeFrame}.csv`,
     );
     link.style.display = "none";
     document.body.appendChild(link);
@@ -1138,7 +1125,7 @@ async function saveBlobsToFiles(accountBlobs, accountsInfo, fromDate) {
 
 /**
  * Returns a date formatted as yyyy-MM-dd
- * 
+ *
  * @param {Date} date
  */
 function formatDate(date) {
@@ -1149,24 +1136,24 @@ function formatDate(date) {
 
 /**
  * Returns a label for the accound ID received
- * 
+ *
  * @param {string} accountId
  */
 function getAccountLabel(accountId) {
-  let accountIdParts = accountId.split('-');
+  let accountIdParts = accountId.split("-");
   let accountLabel = accountIdParts[0];
-  if (accountId.startsWith('non-registered')) {
-    accountLabel = 'non-registered';
+  if (accountId.startsWith("non-registered")) {
+    accountLabel = "non-registered";
     if (accountIdParts.length >= 2) {
       accountLabel += ` ${accountIdParts[2]}`;
     }
   }
-  if (accountIdParts[1] === 'credit' && accountIdParts[2] === 'card'){
-    accountLabel = 'credit card';
+  if (accountIdParts[1] === "credit" && accountIdParts[2] === "card") {
+    accountLabel = "credit card";
     if (accountIdParts.length >= 2) {
       accountLabel += ` ${accountIdParts[2]}`;
     }
   }
-  if (accountIdParts[1] === 'cash') accountLabel = 'cash';
+  if (accountIdParts[1] === "cash") accountLabel = "cash";
   return accountLabel.toUpperCase();
 }
