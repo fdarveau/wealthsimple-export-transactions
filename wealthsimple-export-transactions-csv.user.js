@@ -5,7 +5,7 @@
 // @namespace   Violentmonkey Scripts
 // @match       https://my.wealthsimple.com/*
 // @grant       GM.xmlHttpRequest
-// @version     1.2.4
+// @version     1.2.5
 // @license     MIT
 // @author      eaglesemanation
 // @description Adds export buttons to Activity feed and to Account specific activity. They will export transactions within certain timeframe into CSV, options are "This Month", "Last 3 Month", "All". This should provide better transaction description than what is provided by preexisting CSV export feature.
@@ -178,10 +178,7 @@ function getPageInfo() {
   let info = structuredClone(emptyInfo);
 
   let pathParts = window.location.pathname.split("/");
-  if (
-    (pathParts.length === 4 && pathParts[2] === "account-details") ||
-    (pathParts.length === 3 && pathParts[2] === "activity")
-  ) {
+  if (pathParts.length === 4 && pathParts[2] === "account-details") {
     const buttonsContainerQuery = "div[data-drawer-navbar='true']";
 
     info.pageType = pathParts[2];
@@ -191,7 +188,18 @@ function getPageInfo() {
     }
     info.anchor = anchor[0];
     info.readyPredicate = () =>
-      info.anchor.parentNode.querySelectorAll("h2").length >= 2;
+      info.anchor.parentNode.querySelectorAll("h1").length >= 1;
+    return info;
+  } else if (pathParts.length === 3 && pathParts[2] === "activity") {
+    const wsExportButton = "button[data-testid='button-download-activities']";
+
+    info.pageType = pathParts[2];
+    let anchor = document.querySelectorAll(wsExportButton);
+    if (anchor.length !== 1) {
+      return emptyInfo;
+    }
+    info.anchor = anchor[0].previousSibling;
+    info.readyPredicate = () => true;
     return info;
   }
 
